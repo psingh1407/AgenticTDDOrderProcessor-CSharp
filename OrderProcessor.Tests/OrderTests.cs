@@ -114,4 +114,43 @@ public class OrderTests
         order.Confirm();
         Assert.Throws<InvalidOperationException>(() => order.Deliver());
     }
+
+    // --- Cancel ---
+
+    [Fact]
+    public void Cancel_PendingOrder_ChangesStatusToCancelled()
+    {
+        var order = new Order();
+        order.Cancel();
+        Assert.Equal(OrderStatus.Cancelled, order.Status);
+    }
+
+    [Fact]
+    public void Cancel_ConfirmedOrder_ChangesStatusToCancelled()
+    {
+        var order = new Order();
+        order.Confirm();
+        order.Cancel();
+        Assert.Equal(OrderStatus.Cancelled, order.Status);
+    }
+
+    [Fact]
+    public void Cancel_ShippedOrder_ChangesStatusToCancelled()
+    {
+        var order = new Order();
+        order.Confirm();
+        order.Ship("TRACK-001");
+        order.Cancel();
+        Assert.Equal(OrderStatus.Cancelled, order.Status);
+    }
+
+    [Fact]
+    public void Cancel_DeliveredOrder_Throws()
+    {
+        var order = new Order();
+        order.Confirm();
+        order.Ship("TRACK-001");
+        order.Deliver();
+        Assert.Throws<InvalidOperationException>(() => order.Cancel());
+    }
 }

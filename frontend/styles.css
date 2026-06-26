@@ -166,3 +166,6 @@ fieldset legend {
   border-radius: 5px;
   font-size: 0.85rem;
 }
+
+.btn-danger { background: #e63946; }
+.btn-danger:hover { background: #c1121f; }

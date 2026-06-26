@@ -128,3 +128,46 @@ test('clerk delivers a shipped order - status changes to Delivered', async ({ pa
   await expect(card.locator('[data-testid="order-status"]')).toContainText('Delivered');
   await expect(card.locator('[data-testid="deliver-btn"]')).not.toBeVisible();
 });
+
+test('clerk cancels a pending order - status changes to Cancelled', async ({ page }) => {
+  await page.goto('/');
+  await page.click('[data-testid="create-order-btn"]');
+  const card = page.locator('[data-testid="order-card"]').first();
+  await expect(card).toBeVisible();
+
+  await card.locator('[data-testid="cancel-btn"]').click();
+
+  await expect(card.locator('[data-testid="order-status"]')).toContainText('Cancelled');
+  await expect(card.locator('[data-testid="cancel-btn"]')).not.toBeVisible();
+  await expect(card.locator('[data-testid="confirm-btn"]')).not.toBeVisible();
+});
+
+test('clerk cancels a confirmed order - status changes to Cancelled', async ({ page }) => {
+  await page.goto('/');
+  await page.click('[data-testid="create-order-btn"]');
+  const card = page.locator('[data-testid="order-card"]').first();
+  await expect(card).toBeVisible();
+  await card.locator('[data-testid="confirm-btn"]').click();
+  await expect(card.locator('[data-testid="order-status"]')).toContainText('Confirmed');
+
+  await card.locator('[data-testid="cancel-btn"]').click();
+
+  await expect(card.locator('[data-testid="order-status"]')).toContainText('Cancelled');
+  await expect(card.locator('[data-testid="cancel-btn"]')).not.toBeVisible();
+});
+
+test('delivered order has no cancel button', async ({ page }) => {
+  await page.goto('/');
+  await page.click('[data-testid="create-order-btn"]');
+  const card = page.locator('[data-testid="order-card"]').first();
+  await expect(card).toBeVisible();
+  await card.locator('[data-testid="confirm-btn"]').click();
+  await card.locator('[data-testid="ship-btn"]').click();
+  await card.locator('[name="trackingNumber"]').fill('TRACK-001');
+  await card.locator('[data-testid="submit-ship-btn"]').click();
+  await expect(card.locator('[data-testid="order-status"]')).toContainText('Shipped');
+  await card.locator('[data-testid="deliver-btn"]').click();
+  await expect(card.locator('[data-testid="order-status"]')).toContainText('Delivered');
+
+  await expect(card.locator('[data-testid="cancel-btn"]')).not.toBeVisible();
+});

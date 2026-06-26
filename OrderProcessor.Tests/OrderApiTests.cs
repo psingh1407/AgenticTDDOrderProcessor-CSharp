@@ -167,6 +167,43 @@ public class OrderApiTests : IDisposable
         Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
     }
 
+    // --- Cancel ---
+
+    [Fact]
+    public async Task PostCancel_OnPendingOrder_ReturnsOkWithCancelledStatus()
+    {
+        var orderId = await CreateOrderIdAsync();
+
+        var resp = await _client.PostAsync($"/api/orders/{orderId}/cancel", null);
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Cancelled", body.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task PostCancel_OnConfirmedOrder_ReturnsOkWithCancelledStatus()
+    {
+        var orderId = await CreateConfirmedOrderIdAsync();
+
+        var resp = await _client.PostAsync($"/api/orders/{orderId}/cancel", null);
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Cancelled", body.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task PostCancel_OnDeliveredOrder_ReturnsConflict()
+    {
+        var orderId = await CreateShippedOrderIdAsync();
+        await _client.PostAsync($"/api/orders/{orderId}/deliver", null);
+
+        var resp = await _client.PostAsync($"/api/orders/{orderId}/cancel", null);
+
+        Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
+    }
+
     public void Dispose()
     {
         _factory.Dispose();

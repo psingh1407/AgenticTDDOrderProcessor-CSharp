@@ -29,4 +29,11 @@ public class Order
             throw new InvalidOperationException($"Cannot deliver an order with status {Status}.");
         Status = OrderStatus.Delivered;
     }
+
+    public void Cancel()
+    {
+        if (Status == OrderStatus.Delivered)
+            throw new InvalidOperationException("Cannot cancel a delivered order.");
+        Status = OrderStatus.Cancelled;
+    }
 }

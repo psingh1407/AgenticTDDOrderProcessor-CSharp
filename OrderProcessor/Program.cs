@@ -78,6 +78,9 @@ app.MapPost("/api/orders/{id}/ship", (Guid id, ShipRequest req, IOrderRepository
 app.MapPost("/api/orders/{id}/deliver", (Guid id, IOrderRepository repo) =>
     TransitionOrder(id, repo, o => o.Deliver()));
 
+app.MapPost("/api/orders/{id}/cancel", (Guid id, IOrderRepository repo) =>
+    TransitionOrder(id, repo, o => o.Cancel()));
+
 app.Run();
 
 public partial class Program { }

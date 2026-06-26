@@ -110,6 +110,7 @@ function OrderCard({ order, onUpdated }) {
   const isPending   = order.status === "Pending";
   const isConfirmed = order.status === "Confirmed";
   const isShipped   = order.status === "Shipped";
+  const isCancellable = order.status !== "Delivered" && order.status !== "Cancelled";
   const statusClass = "status-badge status-" + order.status.toLowerCase();
 
   return e("div", { className: "order-card", "data-testid": "order-card" },
@@ -129,7 +130,9 @@ function OrderCard({ order, onUpdated }) {
         onClick: function() { setShowShipForm(function(v) { return !v; }); } },
         showShipForm ? "Cancel" : "Ship"),
       isShipped && e("button", { "data-testid": "deliver-btn",
-        onClick: function() { transition("deliver"); } }, "Mark Delivered")
+        onClick: function() { transition("deliver"); } }, "Mark Delivered"),
+      isCancellable && e("button", { "data-testid": "cancel-btn", className: "btn-danger",
+        onClick: function() { transition("cancel"); } }, "Cancel Order")
     ),
     isConfirmed && showShipForm && e("form", {
       className: "ship-form", onSubmit: ship, "data-testid": "ship-form"
