@@ -2,15 +2,17 @@ namespace OrderProcessor.Domain;
 
 public record DiscountResult(decimal DiscountAmount, decimal FinalTotal, decimal ShippingCost);
 
+public record DiscountContext(bool IsHolidayPeriod, bool IsLoyaltyCustomer);
+
 public class DiscountCalculator
 {
     public DiscountResult Calculate(decimal orderTotal, int itemCount,
-        bool isHolidayPeriod, bool isLoyaltyCustomer, decimal shippingCost)
+        DiscountContext context, decimal shippingCost)
     {
         var rate = 0m;
-        if (itemCount > 10)    rate += 0.05m;
-        if (isHolidayPeriod)   rate += 0.10m;
-        if (isLoyaltyCustomer) rate += 0.08m;
+        if (itemCount > 10)              rate += 0.05m;
+        if (context.IsHolidayPeriod)     rate += 0.10m;
+        if (context.IsLoyaltyCustomer)   rate += 0.08m;
 
         var discountAmount = Math.Round(orderTotal * rate, 2);
         var finalTotal = Math.Round(orderTotal - discountAmount, 2);
