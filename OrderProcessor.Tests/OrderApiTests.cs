@@ -204,6 +204,23 @@ public class OrderApiTests : IDisposable
         Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
     }
 
+    // --- Shipping ---
+
+    [Fact]
+    public async Task PostShipping_Ground_Domestic_ReturnsOrderWithShippingCost()
+    {
+        var orderId = await CreateOrderIdAsync();
+
+        var resp = await _client.PostAsJsonAsync($"/api/orders/{orderId}/shipping",
+            new { method = "Ground", destination = "Domestic" });
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(body.GetProperty("shippingCost").GetDecimal() >= 0m);
+        Assert.Equal("Ground", body.GetProperty("shippingMethod").GetString());
+        Assert.Equal("Domestic", body.GetProperty("destination").GetString());
+    }
+
     public void Dispose()
     {
         _factory.Dispose();

@@ -171,3 +171,21 @@ test('delivered order has no cancel button', async ({ page }) => {
 
   await expect(card.locator('[data-testid="cancel-btn"]')).not.toBeVisible();
 });
+
+test('clerk sets shipping method and sees cost', async ({ page }) => {
+  await page.goto('/');
+  await page.click('[data-testid="create-order-btn"]');
+  const card = page.locator('[data-testid="order-card"]').first();
+  await expect(card).toBeVisible();
+
+  await card.locator('[data-testid="set-shipping-btn"]').click();
+  const form = card.locator('[data-testid="shipping-form"]');
+  await expect(form).toBeVisible();
+  await form.locator('[data-testid="shipping-method-select"]').selectOption('Express');
+  await form.locator('[data-testid="destination-select"]').selectOption('International');
+  await form.locator('[data-testid="submit-shipping-btn"]').click();
+
+  await expect(card.locator('[data-testid="shipping-cost"]')).toBeVisible();
+  await expect(card.locator('[data-testid="shipping-cost"]')).toContainText('Express');
+  await expect(card.locator('[data-testid="shipping-cost"]')).toContainText('International');
+});

@@ -6,6 +6,9 @@ public class Order
     public List<Product> Products { get; set; } = new();
     public OrderStatus Status { get; set; } = OrderStatus.Pending;
     public string? TrackingNumber { get; set; }
+    public ShippingMethod? ShippingMethod { get; set; }
+    public Destination? Destination { get; set; }
+    public decimal? ShippingCost { get; set; }
     public decimal Total => Math.Round(Products.Sum(p => p.EffectivePrice), 2);
 
     public void Confirm()

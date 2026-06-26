@@ -12,6 +12,9 @@ const emptyProduct = {
   packaging: "Boxed", lengthCm: "", widthCm: "", heightCm: "",
 };
 
+const SHIPPING_METHODS = ["Ground", "Express", "Overnight"];
+const DESTINATIONS = ["Domestic", "International"];
+
 function sel(name, value, options, onChange) {
   return e("select", { name, value, onChange: ev => onChange(ev.target.value) },
     ...options.map(o => e("option", { key: o, value: o }, o))
@@ -90,6 +93,9 @@ function OrderCard({ order, onUpdated }) {
   const [showForm, setShowForm] = useState(false);
   const [trackingInput, setTrackingInput] = useState("");
   const [showShipForm, setShowShipForm] = useState(false);
+  const [showShippingForm, setShowShippingForm] = useState(false);
+  const [shippingMethod, setShippingMethod] = useState("Ground");
+  const [destination, setDestination] = useState("Domestic");
 
   function handleAdded(updated) { setShowForm(false); onUpdated(updated); }
 
@@ -107,6 +113,12 @@ function OrderCard({ order, onUpdated }) {
     setTrackingInput("");
   }
 
+  async function setShipping(ev) {
+    ev.preventDefault();
+    await transition("shipping", { method: shippingMethod, destination });
+    setShowShippingForm(false);
+  }
+
   const isPending   = order.status === "Pending";
   const isConfirmed = order.status === "Confirmed";
   const isShipped   = order.status === "Shipped";
@@ -121,6 +133,11 @@ function OrderCard({ order, onUpdated }) {
         "\uD83D\uDCE6 " + order.trackingNumber),
       e("span", { className: "order-total", "data-testid": "order-total" },
         "Total: \u00a3" + order.total.toFixed(2)),
+      order.shippingCost != null && e("span", { className: "shipping-cost", "data-testid": "shipping-cost" },
+        "Shipping (" + order.shippingMethod + "/" + order.destination + "): \u00a3" + order.shippingCost.toFixed(2)),
+      (isPending || isConfirmed) && e("button", { "data-testid": "set-shipping-btn",
+        onClick: function() { setShowShippingForm(function(v) { return !v; }); } },
+        showShippingForm ? "Cancel" : "Set Shipping"),
       isPending && e("button", { "data-testid": "confirm-btn",
         onClick: function() { transition("confirm"); } }, "Confirm"),
       isPending && e("button", { "data-testid": "add-product-btn",
@@ -140,6 +157,23 @@ function OrderCard({ order, onUpdated }) {
       e("input", { name: "trackingNumber", placeholder: "Tracking number", required: true,
         value: trackingInput, onChange: function(ev) { setTrackingInput(ev.target.value); } }),
       e("button", { type: "submit", "data-testid": "submit-ship-btn" }, "Confirm Shipment")
+    ),
+    (isPending || isConfirmed) && showShippingForm && e("form", {
+      className: "ship-form", onSubmit: setShipping, "data-testid": "shipping-form"
+    },
+      e("label", null, "Method",
+        e("select", { name: "shippingMethod", value: shippingMethod,
+          onChange: ev => setShippingMethod(ev.target.value), "data-testid": "shipping-method-select" },
+          ...SHIPPING_METHODS.map(m => e("option", { key: m, value: m }, m))
+        )
+      ),
+      e("label", null, "Destination",
+        e("select", { name: "destination", value: destination,
+          onChange: ev => setDestination(ev.target.value), "data-testid": "destination-select" },
+          ...DESTINATIONS.map(d => e("option", { key: d, value: d }, d))
+        )
+      ),
+      e("button", { type: "submit", "data-testid": "submit-shipping-btn" }, "Calculate & Save")
     ),
     order.products.length > 0
       ? e("table", { className: "product-table" },

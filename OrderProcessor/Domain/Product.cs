@@ -15,6 +15,13 @@ public class Product
     public Dimensions Dimensions { get; set; } = new();
 
     public decimal EffectivePrice => Price * (1 - Discount);
+
+    public decimal ShippingSurcharge =>
+        (decimal)WeightKg * 1.5m
+        + (decimal)(Dimensions.LengthCm * Dimensions.WidthCm * Dimensions.HeightCm) * 0.001m
+        + (Fragile ? 5m : 0m)
+        + (ContainsLiquids ? 3m : 0m)
+        + (Packaging == "Loose" ? 2m : 0m);
 }
 
 public class Dimensions

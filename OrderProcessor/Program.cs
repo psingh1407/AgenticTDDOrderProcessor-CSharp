@@ -81,8 +81,24 @@ app.MapPost("/api/orders/{id}/deliver", (Guid id, IOrderRepository repo) =>
 app.MapPost("/api/orders/{id}/cancel", (Guid id, IOrderRepository repo) =>
     TransitionOrder(id, repo, o => o.Cancel()));
 
+app.MapPost("/api/orders/{id}/shipping", (Guid id, ShippingRequest req, IOrderRepository repo) =>
+{
+    var order = repo.GetById(id);
+    if (order is null) return Results.NotFound();
+    order.ShippingMethod = req.Method;
+    order.Destination = req.Destination;
+    order.ShippingCost = new ShippingCalculator().Calculate(order.Products, req.Method, req.Destination);
+    repo.Save(order);
+    return Results.Ok(order);
+});
+
 app.Run();
 
 public partial class Program { }
 
 record ShipRequest(string TrackingNumber);
+record ShippingRequest(
+    [property: System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
+    ShippingMethod Method,
+    [property: System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
+    Destination Destination);
