@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "type": "command",
+        "powershell": "node \"C:\\agentic-engineering\\AgenticTDDOrderProcessor-Problem-CSharp\\node_modules\\tdd-kitt\\src\\harness\\hooks\\cli.mjs\" copilot-gate"
+      }
+    ]
+  }
+}

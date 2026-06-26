@@ -1,0 +1,1 @@
+# Playwright acceptance specs (*.e2e.ts) go here. The agent may author them; they run via `npm run e2e`.

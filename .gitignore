@@ -1,0 +1,10 @@
+bin/
+obj/
+orders.json
+node_modules/
+.tdd-kitt/
+TestResults/
+playwright-report/
+test-results/
+StrykerOutput/
+.vs/

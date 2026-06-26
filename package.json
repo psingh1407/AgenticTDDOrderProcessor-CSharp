@@ -1,0 +1,17 @@
+{
+  "name": "agentic-order-lifecycle-csharp-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Outer-loop (Playwright) acceptance tests for the Order Lifecycle exercise.",
+  "scripts": {
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "dependencies": {
+    "tdd-kitt": "file:../../Users/Psingh1/Downloads/tdd-kitt.tgz"
+  }
+}

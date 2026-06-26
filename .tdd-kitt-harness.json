@@ -1,0 +1,27 @@
+{
+  "language": "csharp",
+  "testCommand": "dotnet test OrderProcessor.Tests/OrderProcessor.Tests.csproj --nologo -v q --logger:\"trx;LogFileName=results.trx\" --results-directory .tdd-kitt",
+  "reportPath": ".tdd-kitt/results.trx",
+  "runCommand": "node \"C:\\agentic-engineering\\AgenticTDDOrderProcessor-Problem-CSharp\\node_modules\\tdd-kitt\\src\\harness\\hooks\\cli.mjs\" run",
+  "annotateCommand": "node \"C:\\agentic-engineering\\AgenticTDDOrderProcessor-Problem-CSharp\\node_modules\\tdd-kitt\\src\\harness\\hooks\\cli.mjs\" refactor-reviewed",
+  "justifyCommand": "node \"C:\\agentic-engineering\\AgenticTDDOrderProcessor-Problem-CSharp\\node_modules\\tdd-kitt\\src\\harness\\hooks\\cli.mjs\" justify",
+  "suspectsFile": ".github/copilot-instructions.md",
+  "include": [
+    "**/*.cs",
+    "frontend/**/*.html",
+    "frontend/**/*.css",
+    "frontend/**/*.js"
+  ],
+  "exclude": [
+    ".tdd-kitt/**",
+    "**/obj/**",
+    "**/bin/**",
+    "node_modules/**",
+    "TestResults/**",
+    "playwright-report/**",
+    "test-results/**"
+  ],
+  "acceptanceTests": [
+    "tests/**/*.e2e.ts"
+  ]
+}
