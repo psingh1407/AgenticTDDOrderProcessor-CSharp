@@ -189,3 +189,32 @@ test('clerk sets shipping method and sees cost', async ({ page }) => {
   await expect(card.locator('[data-testid="shipping-cost"]')).toContainText('Express');
   await expect(card.locator('[data-testid="shipping-cost"]')).toContainText('International');
 });
+
+test('clerk applies loyalty discount - sees discounted final total', async ({ page }) => {
+  await page.goto('/');
+  await page.click('[data-testid="create-order-btn"]');
+  const card = page.locator('[data-testid="order-card"]').first();
+  await expect(card).toBeVisible();
+
+  // Add a product so the order has a non-zero total
+  await card.locator('[data-testid="add-product-btn"]').click();
+  const form = card.locator('[data-testid="product-form"]');
+  await form.locator('[name="name"]').fill('Test Item');
+  await form.locator('[name="price"]').fill('100.00');
+  await form.locator('[name="discount"]').fill('0');
+  await form.locator('[name="weightKg"]').fill('1');
+  await form.locator('[name="lengthCm"]').fill('10');
+  await form.locator('[name="widthCm"]').fill('10');
+  await form.locator('[name="heightCm"]').fill('10');
+  await form.locator('[data-testid="submit-product-btn"]').click();
+
+  await card.locator('[data-testid="apply-discount-btn"]').click();
+  const discountForm = card.locator('[data-testid="discount-form"]');
+  await expect(discountForm).toBeVisible();
+  await discountForm.locator('[data-testid="loyalty-checkbox"]').check();
+  await discountForm.locator('[data-testid="submit-discount-btn"]').click();
+
+  await expect(card.locator('[data-testid="discount-amount"]')).toBeVisible();
+  await expect(card.locator('[data-testid="final-total"]')).toBeVisible();
+  await expect(card.locator('[data-testid="final-total"]')).toContainText('92.00');
+});

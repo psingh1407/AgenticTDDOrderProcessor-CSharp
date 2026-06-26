@@ -9,7 +9,10 @@ public class Order
     public ShippingMethod? ShippingMethod { get; set; }
     public Destination? Destination { get; set; }
     public decimal? ShippingCost { get; set; }
+    public decimal DiscountAmount { get; set; }
+    public decimal? EffectiveShippingCost { get; set; }
     public decimal Total => Math.Round(Products.Sum(p => p.EffectivePrice), 2);
+    public decimal FinalTotal => Math.Round(Total - DiscountAmount, 2);
 
     public void Confirm()
     {

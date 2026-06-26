@@ -221,6 +221,52 @@ public class OrderApiTests : IDisposable
         Assert.Equal("Domestic", body.GetProperty("destination").GetString());
     }
 
+    // --- Discounts ---
+
+    [Fact]
+    public async Task PostDiscount_BulkItems_ReturnsFinalTotalWithDiscount()
+    {
+        var orderId = await CreateOrderIdAsync();
+        // Add 11 products
+        var product = new
+        {
+            name = "Widget", color = "Red", size = "Small", price = 10.0, discount = 0.0,
+            material = "Glass", weightKg = 0.1, fragile = false, containsLiquids = false,
+            packaging = "Boxed", dimensions = new { lengthCm = 5.0, widthCm = 5.0, heightCm = 5.0 }
+        };
+        for (int i = 0; i < 11; i++)
+            await _client.PostAsJsonAsync($"/api/orders/{orderId}/products", product);
+
+        var resp = await _client.PostAsJsonAsync($"/api/orders/{orderId}/discount",
+            new { isHolidayPeriod = false, isLoyaltyCustomer = false });
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(body.GetProperty("discountAmount").GetDecimal() > 0m);
+        Assert.True(body.GetProperty("finalTotal").GetDecimal() < body.GetProperty("total").GetDecimal());
+    }
+
+    [Fact]
+    public async Task PostDiscount_FreeShipping_WhenFinalTotalExceeds200()
+    {
+        var orderId = await CreateOrderIdAsync();
+        var product = new
+        {
+            name = "Expensive", color = "Red", size = "Large", price = 250.0, discount = 0.0,
+            material = "Metal", weightKg = 1.0, fragile = false, containsLiquids = false,
+            packaging = "Boxed", dimensions = new { lengthCm = 10.0, widthCm = 10.0, heightCm = 10.0 }
+        };
+        await _client.PostAsJsonAsync($"/api/orders/{orderId}/products", product);
+        await _client.PostAsJsonAsync($"/api/orders/{orderId}/shipping",
+            new { method = "Ground", destination = "Domestic" });
+
+        var resp = await _client.PostAsJsonAsync($"/api/orders/{orderId}/discount",
+            new { isHolidayPeriod = false, isLoyaltyCustomer = false });
+
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(0m, body.GetProperty("effectiveShippingCost").GetDecimal());
+    }
+
     public void Dispose()
     {
         _factory.Dispose();

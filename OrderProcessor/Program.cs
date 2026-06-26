@@ -92,6 +92,19 @@ app.MapPost("/api/orders/{id}/shipping", (Guid id, ShippingRequest req, IOrderRe
     return Results.Ok(order);
 });
 
+app.MapPost("/api/orders/{id}/discount", (Guid id, DiscountRequest req, IOrderRepository repo) =>
+{
+    var order = repo.GetById(id);
+    if (order is null) return Results.NotFound();
+    var result = new DiscountCalculator().Calculate(
+        order.Total, order.Products.Count, req.IsHolidayPeriod, req.IsLoyaltyCustomer,
+        order.ShippingCost ?? 0m);
+    order.DiscountAmount = result.DiscountAmount;
+    order.EffectiveShippingCost = result.ShippingCost;
+    repo.Save(order);
+    return Results.Ok(order);
+});
+
 app.Run();
 
 public partial class Program { }
@@ -102,3 +115,4 @@ record ShippingRequest(
     ShippingMethod Method,
     [property: System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
     Destination Destination);
+record DiscountRequest(bool IsHolidayPeriod, bool IsLoyaltyCustomer);

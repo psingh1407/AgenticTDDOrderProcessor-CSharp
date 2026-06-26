@@ -96,6 +96,9 @@ function OrderCard({ order, onUpdated }) {
   const [showShippingForm, setShowShippingForm] = useState(false);
   const [shippingMethod, setShippingMethod] = useState("Ground");
   const [destination, setDestination] = useState("Domestic");
+  const [showDiscountForm, setShowDiscountForm] = useState(false);
+  const [isHolidayPeriod, setIsHolidayPeriod] = useState(false);
+  const [isLoyaltyCustomer, setIsLoyaltyCustomer] = useState(false);
 
   function handleAdded(updated) { setShowForm(false); onUpdated(updated); }
 
@@ -119,6 +122,12 @@ function OrderCard({ order, onUpdated }) {
     setShowShippingForm(false);
   }
 
+  async function applyDiscount(ev) {
+    ev.preventDefault();
+    await transition("discount", { isHolidayPeriod, isLoyaltyCustomer });
+    setShowDiscountForm(false);
+  }
+
   const isPending   = order.status === "Pending";
   const isConfirmed = order.status === "Confirmed";
   const isShipped   = order.status === "Shipped";
@@ -133,8 +142,17 @@ function OrderCard({ order, onUpdated }) {
         "\uD83D\uDCE6 " + order.trackingNumber),
       e("span", { className: "order-total", "data-testid": "order-total" },
         "Total: \u00a3" + order.total.toFixed(2)),
+      order.discountAmount > 0 && e("span", { className: "discount-amount", "data-testid": "discount-amount" },
+        "Discount: -\u00a3" + order.discountAmount.toFixed(2)),
+      order.discountAmount > 0 && e("span", { className: "final-total", "data-testid": "final-total" },
+        "Final: \u00a3" + order.finalTotal.toFixed(2)),
       order.shippingCost != null && e("span", { className: "shipping-cost", "data-testid": "shipping-cost" },
         "Shipping (" + order.shippingMethod + "/" + order.destination + "): \u00a3" + order.shippingCost.toFixed(2)),
+      order.effectiveShippingCost === 0 && order.shippingCost > 0 && e("span", { className: "free-shipping", "data-testid": "free-shipping" },
+        "\u2713 Free Shipping"),
+      (isPending || isConfirmed) && e("button", { "data-testid": "apply-discount-btn",
+        onClick: function() { setShowDiscountForm(function(v) { return !v; }); } },
+        showDiscountForm ? "Cancel" : "Apply Discount"),
       (isPending || isConfirmed) && e("button", { "data-testid": "set-shipping-btn",
         onClick: function() { setShowShippingForm(function(v) { return !v; }); } },
         showShippingForm ? "Cancel" : "Set Shipping"),
@@ -174,6 +192,21 @@ function OrderCard({ order, onUpdated }) {
         )
       ),
       e("button", { type: "submit", "data-testid": "submit-shipping-btn" }, "Calculate & Save")
+    ),
+    (isPending || isConfirmed) && showDiscountForm && e("form", {
+      className: "ship-form", onSubmit: applyDiscount, "data-testid": "discount-form"
+    },
+      e("label", { className: "checkbox-label" },
+        e("input", { type: "checkbox", name: "isHolidayPeriod", checked: isHolidayPeriod,
+          onChange: ev => setIsHolidayPeriod(ev.target.checked), "data-testid": "holiday-checkbox" }),
+        "Holiday Period (−10%)"),
+      e("label", { className: "checkbox-label" },
+        e("input", { type: "checkbox", name: "isLoyaltyCustomer", checked: isLoyaltyCustomer,
+          onChange: ev => setIsLoyaltyCustomer(ev.target.checked), "data-testid": "loyalty-checkbox" }),
+        "Loyalty Customer (−8%)"),
+      e("p", { className: "discount-note" },
+        "Bulk discount (−5%) auto-applies for >10 items"),
+      e("button", { type: "submit", "data-testid": "submit-discount-btn" }, "Apply Discounts")
     ),
     order.products.length > 0
       ? e("table", { className: "product-table" },
