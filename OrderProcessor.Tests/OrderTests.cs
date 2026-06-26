@@ -49,7 +49,8 @@ public class OrderTests
     {
         var order = new Order();
         order.Confirm();
-        Assert.Throws<InvalidOperationException>(() => order.Confirm());
+        var ex = Assert.Throws<InvalidOperationException>(() => order.Confirm());
+        Assert.Contains("Cannot confirm", ex.Message);
     }
 
     // --- Ship ---
@@ -76,7 +77,8 @@ public class OrderTests
     public void Ship_PendingOrder_Throws()
     {
         var order = new Order();
-        Assert.Throws<InvalidOperationException>(() => order.Ship("TRACK-001"));
+        var ex = Assert.Throws<InvalidOperationException>(() => order.Ship("TRACK-001"));
+        Assert.Contains("Cannot ship", ex.Message);
     }
 
     [Fact]
@@ -104,7 +106,8 @@ public class OrderTests
     public void Deliver_PendingOrder_Throws()
     {
         var order = new Order();
-        Assert.Throws<InvalidOperationException>(() => order.Deliver());
+        var ex = Assert.Throws<InvalidOperationException>(() => order.Deliver());
+        Assert.Contains("Cannot deliver", ex.Message);
     }
 
     [Fact]
@@ -151,6 +154,7 @@ public class OrderTests
         order.Confirm();
         order.Ship("TRACK-001");
         order.Deliver();
-        Assert.Throws<InvalidOperationException>(() => order.Cancel());
+        var ex = Assert.Throws<InvalidOperationException>(() => order.Cancel());
+        Assert.Contains("Cannot cancel", ex.Message);
     }
 }

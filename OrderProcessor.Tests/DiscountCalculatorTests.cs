@@ -88,4 +88,25 @@ public class DiscountCalculatorTests
         Assert.Equal(13m, result.DiscountAmount);
         Assert.Equal(87m, result.FinalTotal);
     }
+
+    [Fact]
+    public void Calculate_BulkDiscount_Exactly10Items_NoDiscount()
+    {
+        // boundary: > 10, not >= 10
+        var result = _calc.Calculate(orderTotal: 100m, itemCount: 10,
+            context: new DiscountContext(IsHolidayPeriod: false, IsLoyaltyCustomer: false), shippingCost: 0m);
+
+        Assert.Equal(0m, result.DiscountAmount);
+        Assert.Equal(100m, result.FinalTotal);
+    }
+
+    [Fact]
+    public void Calculate_FreeShipping_FinalTotalExactly200_ShippingNotFree()
+    {
+        // boundary: > 200, not >= 200
+        var result = _calc.Calculate(orderTotal: 200m, itemCount: 1,
+            context: new DiscountContext(IsHolidayPeriod: false, IsLoyaltyCustomer: false), shippingCost: 15m);
+
+        Assert.Equal(15m, result.ShippingCost);
+    }
 }

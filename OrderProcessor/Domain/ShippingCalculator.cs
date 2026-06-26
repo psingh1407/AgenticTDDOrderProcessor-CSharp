@@ -4,8 +4,8 @@ public class ShippingCalculator
 {
     private static readonly Dictionary<ShippingMethod, decimal> BaseRates = new()
     {
-        [ShippingMethod.Ground]    = 5m,
-        [ShippingMethod.Express]   = 15m,
+        [ShippingMethod.Ground] = 5m,
+        [ShippingMethod.Express] = 15m,
         [ShippingMethod.Overnight] = 30m,
     };
 

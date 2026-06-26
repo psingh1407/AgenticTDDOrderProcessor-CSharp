@@ -10,9 +10,9 @@ public class DiscountCalculator
         DiscountContext context, decimal shippingCost)
     {
         var rate = 0m;
-        if (itemCount > 10)              rate += 0.05m;
-        if (context.IsHolidayPeriod)     rate += 0.10m;
-        if (context.IsLoyaltyCustomer)   rate += 0.08m;
+        if (itemCount > 10) rate += 0.05m;
+        if (context.IsHolidayPeriod) rate += 0.10m;
+        if (context.IsLoyaltyCustomer) rate += 0.08m;
 
         var discountAmount = Math.Round(orderTotal * rate, 2);
         var finalTotal = Math.Round(orderTotal - discountAmount, 2);

@@ -63,6 +63,8 @@ public class OrderApiTests : IDisposable
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.True(body.TryGetProperty("id", out _));
         Assert.Equal(0m, body.GetProperty("total").GetDecimal());
+        var id = body.GetProperty("id").GetString()!;
+        Assert.Contains($"/api/orders/{id}", response.Headers.Location!.ToString());
     }
 
     [Fact]
@@ -221,7 +223,66 @@ public class OrderApiTests : IDisposable
         Assert.Equal("Domestic", body.GetProperty("destination").GetString());
     }
 
+    // --- Clear ---
+
+    [Fact]
+    public async Task DeleteOrders_ClearsAllOrders()
+    {
+        await _client.PostAsync("/api/orders", null);
+
+        var deleteResp = await _client.DeleteAsync("/api/orders");
+
+        Assert.Equal(HttpStatusCode.NoContent, deleteResp.StatusCode);
+        var getResp = await _client.GetAsync("/api/orders");
+        var body = await getResp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(0, body.GetArrayLength());
+    }
+
+    [Fact]
+    public async Task PostDiscount_WithShippingSet_PreservesShippingCostWhenTotalUnder200()
+    {
+        var orderId = await CreateOrderIdAsync();
+        var product = new
+        {
+            name = "Widget", color = "Red", size = "Small", price = 50.0, discount = 0.0,
+            material = "Glass", weightKg = 0.5, fragile = false, containsLiquids = false,
+            packaging = "Boxed", dimensions = new { lengthCm = 5.0, widthCm = 5.0, heightCm = 5.0 }
+        };
+        await _client.PostAsJsonAsync($"/api/orders/{orderId}/products", product);
+        await _client.PostAsJsonAsync($"/api/orders/{orderId}/shipping",
+            new { method = "Ground", destination = "Domestic" });
+
+        var resp = await _client.PostAsJsonAsync($"/api/orders/{orderId}/discount",
+            new { isHolidayPeriod = false, isLoyaltyCustomer = false });
+
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        // total is 50, not > 200, so effectiveShippingCost should equal actual shipping cost (non-zero)
+        Assert.True(body.GetProperty("effectiveShippingCost").GetDecimal() > 0m);
+    }
+
     // --- Discounts ---
+
+    [Fact]
+    public async Task PostConfirm_NonExistentOrder_Returns404()
+    {
+        var resp = await _client.PostAsync($"/api/orders/{Guid.NewGuid()}/confirm", null);
+
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostDiscount_WithNoShippingSet_DefaultsShippingCostToZero()
+    {
+        var orderId = await CreateOrderIdAsync();
+        // No shipping set — ShippingCost is null, should default to 0
+
+        var resp = await _client.PostAsJsonAsync($"/api/orders/{orderId}/discount",
+            new { isHolidayPeriod = false, isLoyaltyCustomer = false });
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(0m, body.GetProperty("effectiveShippingCost").GetDecimal());
+    }
 
     [Fact]
     public async Task PostDiscount_BulkItems_ReturnsFinalTotalWithDiscount()
