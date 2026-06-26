@@ -149,3 +149,20 @@ fieldset legend {
 .status-pending    { background: #fef3c7; color: #92400e; }
 .status-confirmed  { background: #d1fae5; color: #065f46; }
 .status-cancelled  { background: #fee2e2; color: #991b1b; }
+
+.tracking { font-size: 0.8rem; color: #555; font-family: monospace; }
+
+.ship-form {
+  display: flex;
+  gap: 8px;
+  padding: 10px 18px;
+  background: #f0f4ff;
+  border-top: 1px solid #e8eaf0;
+}
+.ship-form input {
+  flex: 1;
+  padding: 7px 10px;
+  border: 1px solid #cdd0d8;
+  border-radius: 5px;
+  font-size: 0.85rem;
+}

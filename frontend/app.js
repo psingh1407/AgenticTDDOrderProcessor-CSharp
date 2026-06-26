@@ -88,26 +88,55 @@ function ProductForm({ orderId, onAdded }) {
 
 function OrderCard({ order, onUpdated }) {
   const [showForm, setShowForm] = useState(false);
+  const [trackingInput, setTrackingInput] = useState("");
+  const [showShipForm, setShowShipForm] = useState(false);
 
   function handleAdded(updated) { setShowForm(false); onUpdated(updated); }
 
-  async function confirm() {
-    const res = await fetch("/api/orders/" + order.id + "/confirm", { method: "POST" });
+  async function transition(endpoint, body) {
+    const opts = { method: "POST" };
+    if (body) { opts.headers = { "Content-Type": "application/json" }; opts.body = JSON.stringify(body); }
+    const res = await fetch("/api/orders/" + order.id + "/" + endpoint, opts);
     if (res.ok) onUpdated(await res.json());
   }
 
-  const isPending = order.status === "Pending";
+  async function ship(ev) {
+    ev.preventDefault();
+    await transition("ship", { trackingNumber: trackingInput });
+    setShowShipForm(false);
+    setTrackingInput("");
+  }
+
+  const isPending   = order.status === "Pending";
+  const isConfirmed = order.status === "Confirmed";
+  const isShipped   = order.status === "Shipped";
   const statusClass = "status-badge status-" + order.status.toLowerCase();
 
   return e("div", { className: "order-card", "data-testid": "order-card" },
     e("div", { className: "order-header" },
       e("span", { className: "order-id" }, "Order " + order.id.slice(0, 8) + "..."),
       e("span", { className: statusClass, "data-testid": "order-status" }, order.status),
+      order.trackingNumber && e("span", { className: "tracking", "data-testid": "tracking-number" },
+        "\uD83D\uDCE6 " + order.trackingNumber),
       e("span", { className: "order-total", "data-testid": "order-total" },
         "Total: \u00a3" + order.total.toFixed(2)),
-      isPending && e("button", { "data-testid": "confirm-btn", onClick: confirm }, "Confirm"),
-      isPending && e("button", { "data-testid": "add-product-btn", onClick: function() { setShowForm(function(v) { return !v; }); } },
-        showForm ? "Cancel" : "+ Add Product")
+      isPending && e("button", { "data-testid": "confirm-btn",
+        onClick: function() { transition("confirm"); } }, "Confirm"),
+      isPending && e("button", { "data-testid": "add-product-btn",
+        onClick: function() { setShowForm(function(v) { return !v; }); } },
+        showForm ? "Cancel" : "+ Add Product"),
+      isConfirmed && e("button", { "data-testid": "ship-btn",
+        onClick: function() { setShowShipForm(function(v) { return !v; }); } },
+        showShipForm ? "Cancel" : "Ship"),
+      isShipped && e("button", { "data-testid": "deliver-btn",
+        onClick: function() { transition("deliver"); } }, "Mark Delivered")
+    ),
+    isConfirmed && showShipForm && e("form", {
+      className: "ship-form", onSubmit: ship, "data-testid": "ship-form"
+    },
+      e("input", { name: "trackingNumber", placeholder: "Tracking number", required: true,
+        value: trackingInput, onChange: function(ev) { setTrackingInput(ev.target.value); } }),
+      e("button", { type: "submit", "data-testid": "submit-ship-btn" }, "Confirm Shipment")
     ),
     order.products.length > 0
       ? e("table", { className: "product-table" },

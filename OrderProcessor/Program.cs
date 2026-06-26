@@ -29,6 +29,22 @@ if (Directory.Exists(frontendPath))
     app.MapGet("/", () => Results.File(Path.Combine(frontendPath, "index.html"), "text/html"));
 }
 
+IResult TransitionOrder(Guid id, IOrderRepository repo, Action<Order> transition)
+{
+    var order = repo.GetById(id);
+    if (order is null) return Results.NotFound();
+    try
+    {
+        transition(order);
+        repo.Save(order);
+        return Results.Ok(order);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.Conflict(new { error = ex.Message });
+    }
+}
+
 app.MapPost("/api/orders", (IOrderRepository repo) =>
 {
     var order = repo.Create();
@@ -54,21 +70,16 @@ app.MapDelete("/api/orders", (IOrderRepository repo) =>
 });
 
 app.MapPost("/api/orders/{id}/confirm", (Guid id, IOrderRepository repo) =>
-{
-    var order = repo.GetById(id);
-    if (order is null) return Results.NotFound();
-    try
-    {
-        order.Confirm();
-        repo.Save(order);
-        return Results.Ok(order);
-    }
-    catch (InvalidOperationException ex)
-    {
-        return Results.Conflict(new { error = ex.Message });
-    }
-});
+    TransitionOrder(id, repo, o => o.Confirm()));
+
+app.MapPost("/api/orders/{id}/ship", (Guid id, ShipRequest req, IOrderRepository repo) =>
+    TransitionOrder(id, repo, o => o.Ship(req.TrackingNumber)));
+
+app.MapPost("/api/orders/{id}/deliver", (Guid id, IOrderRepository repo) =>
+    TransitionOrder(id, repo, o => o.Deliver()));
 
 app.Run();
 
 public partial class Program { }
+
+record ShipRequest(string TrackingNumber);

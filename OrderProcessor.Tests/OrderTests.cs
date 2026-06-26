@@ -51,4 +51,67 @@ public class OrderTests
         order.Confirm();
         Assert.Throws<InvalidOperationException>(() => order.Confirm());
     }
+
+    // --- Ship ---
+
+    [Fact]
+    public void Ship_ConfirmedOrder_ChangesStatusToShipped()
+    {
+        var order = new Order();
+        order.Confirm();
+        order.Ship("TRACK-001");
+        Assert.Equal(OrderStatus.Shipped, order.Status);
+    }
+
+    [Fact]
+    public void Ship_ConfirmedOrder_AssignsTrackingNumber()
+    {
+        var order = new Order();
+        order.Confirm();
+        order.Ship("TRACK-001");
+        Assert.Equal("TRACK-001", order.TrackingNumber);
+    }
+
+    [Fact]
+    public void Ship_PendingOrder_Throws()
+    {
+        var order = new Order();
+        Assert.Throws<InvalidOperationException>(() => order.Ship("TRACK-001"));
+    }
+
+    [Fact]
+    public void Ship_ShippedOrder_Throws()
+    {
+        var order = new Order();
+        order.Confirm();
+        order.Ship("TRACK-001");
+        Assert.Throws<InvalidOperationException>(() => order.Ship("TRACK-002"));
+    }
+
+    // --- Deliver ---
+
+    [Fact]
+    public void Deliver_ShippedOrder_ChangesStatusToDelivered()
+    {
+        var order = new Order();
+        order.Confirm();
+        order.Ship("TRACK-001");
+        order.Deliver();
+        Assert.Equal(OrderStatus.Delivered, order.Status);
+    }
+
+    [Fact]
+    public void Deliver_PendingOrder_Throws()
+    {
+        var order = new Order();
+        Assert.Throws<InvalidOperationException>(() => order.Deliver());
+    }
+
+    [Fact]
+    public void Deliver_ConfirmedOrder_Throws()
+    {
+        var order = new Order();
+        order.Confirm();
+        Assert.Throws<InvalidOperationException>(() => order.Deliver());
+    }
 }

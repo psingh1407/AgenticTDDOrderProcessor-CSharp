@@ -29,6 +29,31 @@ public class OrderApiTests : IDisposable
         _client = _factory.CreateClient();
     }
 
+    // --- Helpers ---
+
+    private async Task<string> CreateOrderIdAsync()
+    {
+        var resp = await _client.PostAsync("/api/orders", null);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        return body.GetProperty("id").GetString()!;
+    }
+
+    private async Task<string> CreateConfirmedOrderIdAsync()
+    {
+        var id = await CreateOrderIdAsync();
+        await _client.PostAsync($"/api/orders/{id}/confirm", null);
+        return id;
+    }
+
+    private async Task<string> CreateShippedOrderIdAsync()
+    {
+        var id = await CreateConfirmedOrderIdAsync();
+        await _client.PostAsJsonAsync($"/api/orders/{id}/ship", new { trackingNumber = "TRACK-001" });
+        return id;
+    }
+
+    // --- Tests ---
+
     [Fact]
     public async Task PostOrders_ReturnsCreatedWithId()
     {
@@ -56,21 +81,13 @@ public class OrderApiTests : IDisposable
     [Fact]
     public async Task PostProductToOrder_ReturnsOrderWithUpdatedTotal()
     {
-        var createResp = await _client.PostAsync("/api/orders", null);
-        var order = await createResp.Content.ReadFromJsonAsync<JsonElement>();
-        var orderId = order.GetProperty("id").GetString();
+        var orderId = await CreateOrderIdAsync();
 
         var product = new
         {
-            name = "Glass Vase",
-            color = "Red",
-            size = "Medium",
-            price = 25.00m,
-            discount = 0.1m,
-            material = "Glass",
-            weightKg = 0.5,
-            fragile = true,
-            containsLiquids = false,
+            name = "Glass Vase", color = "Red", size = "Medium",
+            price = 25.00m, discount = 0.1m, material = "Glass",
+            weightKg = 0.5, fragile = true, containsLiquids = false,
             packaging = "Boxed",
             dimensions = new { lengthCm = 10.0, widthCm = 10.0, heightCm = 20.0 }
         };
@@ -84,28 +101,70 @@ public class OrderApiTests : IDisposable
     [Fact]
     public async Task PostConfirm_OnPendingOrder_ReturnsOkWithConfirmedStatus()
     {
-        var createResp = await _client.PostAsync("/api/orders", null);
-        var order = await createResp.Content.ReadFromJsonAsync<JsonElement>();
-        var orderId = order.GetProperty("id").GetString();
+        var orderId = await CreateOrderIdAsync();
 
-        var confirmResp = await _client.PostAsync($"/api/orders/{orderId}/confirm", null);
+        var resp = await _client.PostAsync($"/api/orders/{orderId}/confirm", null);
 
-        Assert.Equal(HttpStatusCode.OK, confirmResp.StatusCode);
-        var confirmed = await confirmResp.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal("Confirmed", confirmed.GetProperty("status").GetString());
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Confirmed", body.GetProperty("status").GetString());
     }
 
     [Fact]
     public async Task PostConfirm_OnAlreadyConfirmedOrder_ReturnsConflict()
     {
-        var createResp = await _client.PostAsync("/api/orders", null);
-        var order = await createResp.Content.ReadFromJsonAsync<JsonElement>();
-        var orderId = order.GetProperty("id").GetString();
-        await _client.PostAsync($"/api/orders/{orderId}/confirm", null);
+        var orderId = await CreateConfirmedOrderIdAsync();
 
-        var secondConfirm = await _client.PostAsync($"/api/orders/{orderId}/confirm", null);
+        var resp = await _client.PostAsync($"/api/orders/{orderId}/confirm", null);
 
-        Assert.Equal(HttpStatusCode.Conflict, secondConfirm.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostShip_OnConfirmedOrder_ReturnsOkWithShippedStatus()
+    {
+        var orderId = await CreateConfirmedOrderIdAsync();
+
+        var resp = await _client.PostAsJsonAsync($"/api/orders/{orderId}/ship",
+            new { trackingNumber = "TRACK-001" });
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Shipped", body.GetProperty("status").GetString());
+        Assert.Equal("TRACK-001", body.GetProperty("trackingNumber").GetString());
+    }
+
+    [Fact]
+    public async Task PostShip_OnPendingOrder_ReturnsConflict()
+    {
+        var orderId = await CreateOrderIdAsync();
+
+        var resp = await _client.PostAsJsonAsync($"/api/orders/{orderId}/ship",
+            new { trackingNumber = "TRACK-001" });
+
+        Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostDeliver_OnShippedOrder_ReturnsOkWithDeliveredStatus()
+    {
+        var orderId = await CreateShippedOrderIdAsync();
+
+        var resp = await _client.PostAsync($"/api/orders/{orderId}/deliver", null);
+
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Delivered", body.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task PostDeliver_OnConfirmedOrder_ReturnsConflict()
+    {
+        var orderId = await CreateConfirmedOrderIdAsync();
+
+        var resp = await _client.PostAsync($"/api/orders/{orderId}/deliver", null);
+
+        Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
     }
 
     public void Dispose()
